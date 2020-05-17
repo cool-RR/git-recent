@@ -1,0 +1,167 @@
+#!/usr/bin/env python
+# Copyright 2020 Ram Rachum and collaborators.
+# This program is distributed under the MIT license.
+
+import subprocess
+import re
+import sys
+import textwrap
+
+__version__ = '0.1'
+
+
+if sys.version_info.major == 2:
+    input = raw_input
+
+class BadUsage(Exception):
+    pass
+
+class BadUsageShowHelp(BadUsage):
+    pass
+
+
+class ShellColor:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def git_output(*args):
+    '''Launch a Git command, output would be returned rather than printed.'''
+    return subprocess.check_output(('git',) + args).decode()
+
+def git(*args):
+    '''Launch a Git command, with the output written to console normally.'''
+    return subprocess.check_call(('git',) + args)
+
+
+def remove_duplicates(iterable):
+    '''Iterate over an iterable with duplicates removed'''
+    visited = set()
+    for item in iterable:
+        if item in visited:
+            continue
+        else:
+            visited.add(item)
+            yield item
+
+
+def get_recent_branches():
+    '''Get a tuple of recently checked-out branches.'''
+    text = git_output('reflog')
+    matches = re.finditer(r'checkout: moving from .* to (.*)', text)
+    return tuple(remove_duplicates(match.group(1) for match in matches))
+
+
+def git_recent(n_branches=5):
+    '''
+    Show a menu of recently checked-out branches and offer to check them out.
+    '''
+    recent_branches = get_recent_branches()[:n_branches]
+    if not recent_branches:
+        print('No branches.')
+        return
+    for i, branch in enumerate(recent_branches, start=1):
+        def format_number(i):
+            if len(recent_branches) <= 9:
+                return '[%s]' % (i,)
+            else:
+                return '[%2s]' % (i,)
+
+        print(
+            '%s%s%s git checkout %s' % (
+                ShellColor.WARNING, format_number(i), ShellColor.ENDC, branch
+            )
+        )
+    input_text = input(
+        '%sChoose by number (1-%s): %s' % (
+            ShellColor.OKBLUE, len(recent_branches), ShellColor.ENDC
+        )
+    ).strip()
+    if input_text in ('', 'q', 'quit', 'exit'):
+        return
+    try:
+        input_number = int(input_text)
+    except ValueError:
+        raise BadUsage("That's not a number.")
+
+    if not (1 <= input_number <= len(recent_branches)):
+        raise BadUsage(
+            'That number is not in the range 1-%s.' % (len(recent_branches),)
+        )
+
+    branch = recent_branches[input_number - 1]
+    print('git checkout %s' % (branch,))
+    git('checkout', branch)
+
+
+def show_help():
+    print(textwrap.dedent('''\
+        git recent - Quickly check out your favorite branches
+
+        This command shows a nice menu letting you check out one of your
+        recent branches with just two keystrokes.
+
+        Simple usage:
+
+            git recent
+
+
+        Advanced usage:
+
+            git recent 10  # Show the last 10 branches instead of 5
+
+
+        Copyright 2020 Ram Rachum and collaborators. MIT license.
+    '''))
+
+
+def git_recent_cli():
+    '''Process command line argument and run git-recent.'''
+    try:
+        arguments = sys.argv[1:]
+        if len(arguments) >= 2:
+            raise BadUsageShowHelp(
+                'Error: Too many arguments'
+            )
+        elif len(arguments) == 1:
+            (argument,) = arguments
+            if argument in ('-h', '--help'):
+                show_help()
+                sys.exit()
+            try:
+                n_branches = int(argument)
+            except ValueError:
+                raise BadUsageShowHelp(
+                    textwrap.dedent('''\
+                        Error: You passed an argument %s which is not a number.
+                        The only argument we accept should be the number of
+                        branches to show.
+                    ''' % (argument,))
+                )
+            git_recent(n_branches)
+        else:
+            # No arguments
+            git_recent()
+    except BadUsageShowHelp as bad_usage_show_help:
+        print(bad_usage_show_help.args[0])
+        show_help()
+        sys.exit(129)
+    except BadUsage as bad_usage:
+        print(bad_usage.args[0])
+        sys.exit(129)
+
+
+
+
+
+
+if __name__ == '__main__':
+    git_recent_cli()
+
+

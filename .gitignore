@@ -1,0 +1,17 @@
+*.py[co]
+__pycache__/
+
+.tox/
+.pytest_cache/
+.mypy_cache/
+
+dist/
+build/
+*.egg-info/
+
+*.bak
+
+*.wpu
+
+.coverage
+htmlcov
