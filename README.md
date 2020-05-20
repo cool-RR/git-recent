@@ -15,7 +15,7 @@ branches, and lets you check them out in 2 keystrokes.
 Copy-paste this line to Bash and run:
 
 ```console
-$ curl https://raw.githubusercontent.com/cool-RR/git-recent/master/git-recent -o ~/bin/git-recent
+curl https://raw.githubusercontent.com/cool-RR/git-recent/master/git-recent -o ~/bin/git-recent && chmod +x ~/bin/git-recent
 ```
 
 Give `git recent` a test run to make sure you did it right.
@@ -23,8 +23,8 @@ Give `git recent` a test run to make sure you did it right.
 # Manual installation #
 
 Copy the git-recent file above to `~/bin/` or anywhere that's on your path,
-give `git recent` a test run to make sure you did it right.
-
+chmod it to be executable, and give `git recent` a test run to make sure you
+did it right.
 
 # Alias #
 
@@ -47,6 +47,3 @@ I'm thinking mostly of Berlin or Munich, but anywhere in the EU could work.
 # License #
 
 Copyright (c) 2020 Ram Rachum and collaborators, released under the MIT license.
-
-
-
